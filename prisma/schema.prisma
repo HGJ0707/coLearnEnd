@@ -1,0 +1,482 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  uid         Int      @id @default(autoincrement())
+  account     String   @db.VarChar(255)
+  username    String   @db.VarChar(255)
+  password    String   @default("123456") @db.VarChar(255)
+  create_time DateTime @default(now())
+  update_time DateTime @updatedAt
+  state       Int      @default(1)
+
+  @@map("users")
+}
+
+model UserMarks {
+  id          Int      @id @default(autoincrement())
+  uid         Int
+  score       Int
+  create_time DateTime @default(now())
+  update_time DateTime @updatedAt
+  state       Int      @default(1)
+  work_id     Int
+  work        Works    @relation(fields: [work_id], references: [id])
+
+  @@map("user_marks")
+}
+
+model Teachers {
+  id          Int      @id @default(autoincrement())
+  uid         Int
+  username    String   @db.VarChar(255)
+  phone_num   String   @db.VarChar(255)
+  password    String   @db.VarChar(255)
+  create_time DateTime @default(now())
+  update_time DateTime @updatedAt
+  state       Int      @default(1)
+
+  // todo
+  TeacherMarks    TeacherMarks[]
+  TeacherRemarks  TeacherRemarks[]
+  TeacherComments TeacherComments[]
+  Courses         Courses[]
+  Students        Students[]
+  Classes         Classes[]
+
+  @@map("teachers")
+}
+
+model TeacherMarks {
+  id          Int      @id @default(autoincrement())
+  teacher_id  Int
+  teacher     Teachers @relation(fields: [teacher_id], references: [id])
+  work_id     Int
+  work        Works    @relation(fields: [work_id], references: [id])
+  mark        Int
+  create_time DateTime @default(now())
+  update_time DateTime @updatedAt
+  state       Int      @default(1)
+
+  @@index([teacher_id], name: "mark_teacher_id")
+  @@index([work_id], name: "mark_teacher_work_id")
+  @@map("teacher_marks")
+}
+
+model TeacherRemarks {
+  id          Int      @id @default(autoincrement())
+  uid         Int
+  teacher_id  Int
+  teacher     Teachers @relation(fields: [teacher_id], references: [id])
+  content     String   @db.Text
+  work_id     Int
+  work        Works    @relation(fields: [work_id], references: [id])
+  create_time DateTime @default(now())
+  update_time DateTime @default(now())
+  state       Int      @default(1)
+
+  @@index([teacher_id], name: "teacher_comment_id")
+  @@index([work_id], name: "teacher_comment_workid")
+  @@map("teacher_remarks")
+}
+
+model TeacherComments {
+  id          Int      @id @default(autoincrement())
+  teacher_id  Int
+  teacher     Teachers @relation(fields: [teacher_id], references: [id])
+  content     String   @db.Text
+  work_id     Int
+  work        Works    @relation(fields: [work_id], references: [id])
+  create_time DateTime @default(now())
+  update_time DateTime @default(now())
+  state       Int      @default(1)
+
+  @@index([teacher_id], name: "teacher_comment_id")
+  @@index([work_id], name: "teacher_comment_workid")
+  @@map("teacher_comments")
+}
+
+model Works {
+  id          Int      @id @default(autoincrement())
+  work_title  String   @db.VarChar(255)
+  like_count  Int      @default(0)
+  jon_url     String
+  cover_url   String
+  pageviews   Int      @default(0)
+  create_time DateTime @default(now())
+  update_time DateTime @updatedAt
+  state       Int      @default(1)
+
+  // todo
+  UserMarks       UserMarks[]
+  WorkPv          WorkPv[]
+  WorkLike        WorkLike[]
+  TeacherMarks    TeacherMarks[]
+  TeacherRemarks  TeacherRemarks[]
+  TeacherComments TeacherComments[]
+  GroupsStudent   GroupsStudent[]
+  Comments        Comments[]
+  StudentMarks    StudentMarks[]
+  StudentDanmu    StudentDanmu[]
+  Barrages        Barrages[]
+
+  @@index([id])
+  @@map("works")
+}
+
+model WorkPv {
+  id          Int      @id @default(autoincrement())
+  uid         Int
+  work_id     Int
+  work        Works    @relation(fields: [work_id], references: [id])
+  create_time DateTime @default(now())
+  update_time DateTime @updatedAt
+  state       Int      @default(1)
+
+  @@index([work_id], name: "pv_work_id")
+  @@map("work_pv")
+}
+
+model WorkLike {
+  id          Int      @id @default(autoincrement())
+  uid         Int
+  is_like     Int
+  work_id     Int
+  work        Works    @relation(fields: [work_id], references: [id])
+  create_time DateTime @default(now())
+  update_time DateTime @updatedAt
+  state       Int      @default(1)
+
+  @@map("work_like")
+}
+
+model Tasks {
+  course_id     Int
+  task_id       Int      @unique
+  task_title    String   @db.VarChar(255)
+  task_type     String   @db.VarChar(255)
+  task_desc     String   @db.VarChar(255)
+  desc_file_url String   @db.VarChar(255)
+  deadline      String   @db.VarChar(255)
+  create_time   DateTime @default(now())
+  update_time   DateTime @updatedAt
+  state         Int      @default(1)
+
+  // 关系定义
+  course        Courses         @relation(fields: [course_id], references: [id])
+  GroupsStudent GroupsStudent[]
+
+  // 联合主键
+  @@id([course_id, task_id])
+  @@index([course_id], name: "tasks_course_id")
+  @@map("tasks")
+}
+
+model Courses {
+  id          Int      @id @default(autoincrement())
+  teacher_id  Int
+  teacher     Teachers @relation(fields: [teacher_id], references: [id])
+  course_name String   @db.VarChar(255)
+  course_desc String   @db.VarChar(255)
+  course_img  String   @db.VarChar(255)
+  create_time DateTime @default(now())
+  update_time DateTime @updatedAt
+  state       Int      @default(1)
+
+  // 关系定义
+  tasks        Tasks[]
+  ChooseCourse ChooseCourse[]
+
+  @@index([teacher_id], name: "course_teacher")
+  @@map("courses")
+}
+
+model Classes {
+  teacher_id  Int
+  teacher     Teachers @relation(fields: [teacher_id], references: [id])
+  class_name  String   @id @db.VarChar(255)
+  grade       String   @db.VarChar(255)
+  major       String   @db.VarChar(255)
+  class       String   @db.VarChar(255)
+  create_time DateTime @default(now())
+  update_time DateTime @updatedAt
+  state       Int      @default(1)
+
+  Students     Students[]
+  ChooseCourse ChooseCourse[]
+
+  @@index([teacher_id], name: "teacherid")
+  @@map("classes")
+}
+
+model Students {
+  student_id         String               @id @db.VarChar(255)
+  class_name         String               @db.VarChar(255)
+  classes            Classes              @relation(fields: [class_name], references: [class_name])
+  uid                Int
+  student_name       String               @db.VarChar(255)
+  gender             String               @default("1") @db.VarChar(255)
+  password           String               @default("123456") @db.VarChar(255)
+  teacher_id         Int
+  teacher            Teachers             @relation(fields: [teacher_id], references: [id])
+  create_time        DateTime             @default(now())
+  update_time        DateTime             @updatedAt
+  state              Int                  @default(1)
+  StudentReplyLike   StudentReplyLike[]
+  ReplyAsUser        Reply[]              @relation("ReplyUser")
+  ReplyAsToUser      Reply[]              @relation("ReplyToUser")
+  StudentMark        StudentMarks[]
+  StudentDanmu       StudentDanmu[]
+  StudentDanmuLike   StudentDanmuLike[]
+  StudentCommentLike StudentCommentLike[]
+  GroupsStudent      GroupsStudent[]      @relation("GroupLeader")
+  GroupMembers       GroupMembers[]
+
+  @@index([teacher_id], name: "teacher_id")
+  @@map("students")
+}
+
+model StudentReplyLike {
+  id          Int      @id @default(autoincrement())
+  like        Int
+  student_id  String
+  students    Students @relation(fields: [student_id], references: [student_id])
+  reply_id    Int
+  replies     Reply    @relation(fields: [reply_id], references: [id])
+  create_time DateTime @default(now())
+  update_time DateTime @updatedAt
+  state       Int      @default(1)
+
+  @@index([reply_id], name: "student_reply_like_id")
+  @@index([student_id], name: "student_reply_like")
+  @@map("student_reply_like")
+}
+
+model StudentMarks {
+  id          Int      @id @default(autoincrement())
+  student_id  String
+  students    Students @relation(fields: [student_id], references: [student_id])
+  mark        Int
+  work_id     Int
+  work        Works    @relation(fields: [work_id], references: [id])
+  create_time DateTime @default(now())
+  update_time DateTime @updatedAt
+  state       Int      @default(1)
+  Reply       Reply?   @relation(fields: [replyId], references: [id])
+  replyId     Int?
+
+  @@index([student_id], name: "mark_student_id")
+  @@index([work_id], name: "mark_work_id")
+  @@map("student_marks")
+}
+
+model Reply {
+  id            Int      @id @default(autoincrement())
+  reply_user    String
+  replyUser     Students @relation("ReplyUser", fields: [reply_user], references: [student_id])
+  reply_to_user String
+  replyToUser   Students @relation("ReplyToUser", fields: [reply_to_user], references: [student_id])
+  reply_content String   @db.Text
+  like_count    Int      @default(0)
+  create_time   DateTime @default(now())
+  update_time   DateTime @updatedAt
+  state         Int      @default(1)
+  comment_id    Int
+  comments      Comments @relation(fields: [comment_id], references: [id])
+
+  StudentReplyLike StudentReplyLike[]
+  StudentMark      StudentMarks[]
+
+  @@index([comment_id], name: "reply_comment_id")
+  @@index([reply_user], name: "reply_user_id")
+  @@index([reply_to_user], name: "reply_to_user_id")
+  @@map("reply")
+}
+
+model StudentDanmu {
+  id               Int                @id @default(autoincrement())
+  student_id       String
+  students         Students           @relation(fields: [student_id], references: [student_id])
+  danmu_content    String             @db.Text
+  danmu_time       Int                @default(0)
+  work_id          Int
+  work             Works              @relation(fields: [work_id], references: [id])
+  create_time      DateTime           @default(now())
+  update_time      DateTime           @updatedAt
+  state            Int                @default(1)
+  StudentDanmuLike StudentDanmuLike[]
+
+  @@index([student_id], name: "mark_student_id")
+  @@index([work_id], name: "mark_work_id")
+  @@map("student_danmu")
+}
+
+model StudentDanmuLike {
+  id          Int          @id @default(autoincrement())
+  student_id  String
+  students    Students     @relation(fields: [student_id], references: [student_id])
+  danmu_id    Int
+  danmu       StudentDanmu @relation(fields: [danmu_id], references: [id])
+  create_time DateTime     @default(now())
+  update_time DateTime     @updatedAt
+  state       Int          @default(1)
+
+  @@index([student_id], name: "student_reply_like")
+  @@index([danmu_id], name: "student_reply_id_like")
+  @@map("student_danmu_like")
+}
+
+model StudentCommentLike {
+  id          Int      @id @default(autoincrement())
+  like        Int
+  student_id  String
+  students    Students @relation(fields: [student_id], references: [student_id])
+  comment_id  Int
+  comments    Comments @relation(fields: [comment_id], references: [id])
+  create_time DateTime @default(now())
+  update_time DateTime @updatedAt
+  state       Int      @default(1)
+
+  @@index([student_id], name: "like_student_id")
+  @@index([comment_id], name: "like_comment_id")
+  @@map("student_comment_like")
+}
+
+model Comments {
+  id               Int      @id @default(autoincrement())
+  comment_user_uid Int
+  comment_user     String   @db.VarChar(255)
+  content          String   @db.Text
+  like_count       Int      @default(0)
+  work_id          Int
+  work             Works    @relation(fields: [work_id], references: [id])
+  parent_id        Int
+  create_time      DateTime @default(now())
+  update_time      DateTime @updatedAt
+  state            Int      @default(1)
+
+  Reply              Reply[]
+  StudentCommentLike StudentCommentLike[]
+  CommentLike        CommentLike[]
+
+  @@index([work_id], name: "comments_work_id")
+  @@map("comments")
+}
+
+model ScoreWeight {
+  id                  Int      @id @default(autoincrement())
+  work_type           String   @default("videowork") @db.VarChar(255)
+  comment_unit        Int
+  comment_weight      Int
+  like_unit           Int
+  like_weight         Int
+  belike_unit         Int
+  belike_weight       Int
+  teacher_mark_weight Int
+  student_mark_weight Int
+  danmu_unit          Int      @default(0)
+  danmu_weight        Int
+  course_id           Int
+  create_time         DateTime @default(now())
+  update_time         DateTime @updatedAt
+  state               Int      @default(1)
+
+  @@map("score_weight")
+}
+
+model GroupsStudent {
+  id           Int
+  task_id      Int
+  group_leader String   @db.VarChar(255)
+  group_name   String   @db.VarChar(255)
+  work_id      Int
+  score        Int
+  create_time  DateTime @default(now())
+  update_time  DateTime @updatedAt
+  state        Int      @default(1)
+
+  // 关系定义
+  task         Tasks          @relation(fields: [task_id], references: [task_id])
+  groupLeader  Students       @relation("GroupLeader", fields: [group_leader], references: [student_id])
+  work         Works?         @relation(fields: [work_id], references: [id])
+  groupMembers GroupMembers[]
+
+  // 联合主键
+  @@id([task_id, group_leader])
+  @@index([task_id], name: "group_task_id")
+  @@index([group_leader], name: "group_leader")
+  @@map("groups_student")
+}
+
+model GroupMembers {
+  task_id     Int
+  student_id  String   @db.VarChar(255)
+  leader_id   String   @db.VarChar(255)
+  create_time DateTime @default(now())
+  update_time DateTime @updatedAt
+  state       Int      @default(1)
+
+  // 关系定义
+  task    GroupsStudent @relation(fields: [task_id, leader_id], references: [task_id, group_leader])
+  student Students      @relation(fields: [student_id], references: [student_id])
+
+  // 联合主键
+  @@id([task_id, student_id, leader_id])
+  @@index([leader_id], name: "mermbers_leader_id")
+  @@index([student_id], name: "members_student_id")
+  @@map("group_members")
+}
+
+model CommentLike {
+  id          Int      @id @default(autoincrement())
+  uid         Int
+  comment_id  Int
+  comments    Comments @relation(fields: [comment_id], references: [id])
+  is_like     Int
+  create_time DateTime @default(now())
+  update_time DateTime @updatedAt
+  state       Int      @default(1)
+
+  @@index([comment_id], name: "like_comment")
+  @@map("comment_like")
+}
+
+model ChooseCourse {
+  class_name  String   @db.VarChar(255)
+  course_id   Int
+  create_time DateTime @default(now())
+  update_time DateTime @updatedAt
+  state       Int      @default(1)
+
+  classes Classes @relation(fields: [class_name], references: [class_name])
+  courses Courses @relation(fields: [course_id], references: [id])
+
+  // 联合主键
+  @@id([class_name, course_id])
+  @@index([course_id], name: "course_id")
+  @@map("choose_course")
+}
+
+model Barrages {
+  id          Int      @id @default(autoincrement())
+  uid         Int
+  content     String   @db.VarChar(255)
+  danmu_time  Int      @default(0)
+  work_id     Int
+  work        Works?   @relation(fields: [work_id], references: [id])
+  create_time DateTime @default(now())
+  update_time DateTime @updatedAt
+  state       Int      @default(1)
+}
