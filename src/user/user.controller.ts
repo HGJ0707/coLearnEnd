@@ -12,6 +12,7 @@ import { LoginStudentDto } from './dto/login-student.dto';
 import { ImportStudentDataDto } from './dto/import-student-data.dto';
 import { GroupMembersDto } from './dto/group-members.dto';
 import { generateParseIntPipe } from '../utils';
+import { RequireLogin } from '../custom.decorator';
 
 @Controller()
 export class UserController {
@@ -49,6 +50,7 @@ export class UserController {
    * 导入学生信息
    */
   @Post('import_student_data')
+  @RequireLogin()
   async importStudentData(@Body() importStudentData: ImportStudentDataDto) {
     return await this.userService.importStudentData(importStudentData);
   }
@@ -57,6 +59,7 @@ export class UserController {
    * 获取热门作品
    */
   @Post('get_hot_work_list')
+  @RequireLogin()
   async getHotWorkList(
     @Query('pageNo', new DefaultValuePipe(1), generateParseIntPipe('pageNo'))
     pageNo: number,
@@ -74,6 +77,7 @@ export class UserController {
    * 获取小组成员
    */
   @Post('get_group_members')
+  @RequireLogin()
   async getGroupMembers(@Body() getGroupMembers: GroupMembersDto) {
     return await this.userService.getGroupMembers(getGroupMembers);
   }
